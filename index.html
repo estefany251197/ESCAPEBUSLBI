@@ -18,6 +18,22 @@ section{margin:30px 0 82px}.heading{display:flex;align-items:center;justify-cont
 <footer><img src="logo-limabus.svg" alt="Lima Bus Internacional" class="official-logo">ESCAPE BUS · DESARROLLO ORGANIZACIONAL · 2026</footer>
 <script>
 const CSV='https://docs.google.com/spreadsheets/d/e/2PACX-1vQJG2_BhKBs5crCemx6wv--6mXb9jPAqiNEXJrt4wXWtg6-9uhABFmhRXONFSul_tjM0BrfQnutt3hA/pub?gid=0&single=true&output=csv';
+
+// Pega aquí la URL /exec de la implementación web de Apps Script.
+const APPS_SCRIPT_URL='';
+function loadAppsScript() {
+ return new Promise((resolve,reject)=>{
+  const cb='escapeBusCb_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+  const s=document.createElement('script');
+  let done=false;
+  const timer=setTimeout(()=>end(new Error('Apps Script no respondió a tiempo')),15000);
+  function end(err,rows){if(done)return;done=true;clearTimeout(timer);delete window[cb];s.remove();if(err)reject(err);else resolve(rows)}
+  window[cb]=data=>data && data.ok ? end(null,data.rows) : end(new Error(data?.error||'El servicio devolvió un error'));
+  s.onerror=()=>end(new Error('No se pudo conectar a Apps Script'));
+  const url=new URL(APPS_SCRIPT_URL);url.searchParams.set('callback',cb);url.searchParams.set('_t',String(Date.now()));
+  s.src=url.toString();document.head.appendChild(s);
+ });
+}
 const el=id=>document.getElementById(id);let resultData=Array.from({length:10},(_,i)=>({name:'Equipo '+(i+1),time:null,status:'Pendiente'}));
 function parseCSV(s){const out=[];let row=[],cell='',q=false;for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'){if(q&&s[i+1]==='"'){cell+='"';i++}else q=!q}else if(c===','&&!q){row.push(cell);cell=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&s[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))out.push(row);row=[];cell=''}else cell+=c}row.push(cell);if(row.some(v=>v.trim()))out.push(row);return out}
 function esc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
@@ -43,6 +59,7 @@ function loadGviz(){
  });
 }
 async function loadRows(){
+ if(APPS_SCRIPT_URL) return loadAppsScript();
  try{const url=new URL(CSV);url.searchParams.set('_t',String(Date.now()));const r=await fetch(url.toString(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return parseCSV(await r.text())}
  catch(fetchError){try{return await loadGviz()}catch(gvizError){throw new Error('CSV: '+fetchError.message+' / Sheets: '+gvizError.message)}}
 }
