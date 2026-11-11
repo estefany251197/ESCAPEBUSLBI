@@ -63,7 +63,7 @@ async function loadRows(){
  try{const url=new URL(CSV);url.searchParams.set('_t',String(Date.now()));const r=await fetch(url.toString(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return parseCSV(await r.text())}
  catch(fetchError){try{return await loadGviz()}catch(gvizError){throw new Error('CSV: '+fetchError.message+' / Sheets: '+gvizError.message)}}
 }
-async function refresh(manual=false){const btn=el("refresh-btn");if(btn){btn.disabled=true;btn.textContent="↻ ACTUALIZANDO..."}if(manual)el("status").textContent="Consultando Google Sheets ahora...";try{const rows=await loadRows();if(!rows.length||!rows[0].join('').toLowerCase().includes('equipo'))throw Error('Formato de hoja incorrecto');const next=Array.from({length:10},(_,i)=>({name:'Equipo '+(i+1),time:null,status:'Pendiente'}));for(let i=0;i<10;i++){
+async function refresh(manual=false){const btn=el("refresh-btn");if(btn){btn.disabled=true;btn.textContent="↻ ACTUALIZANDO..."}if(manual)el("status").textContent="Consultando Google Sheets ahora...";try{const rows=await loadRows();const sample=JSON.stringify(rows.slice(0,3));if(!rows.length||!rows[0].join('').toLowerCase().includes('equipo'))throw Error('Formato de hoja incorrecto');const next=Array.from({length:10},(_,i)=>({name:'Equipo '+(i+1),time:null,status:'Pendiente'}));for(let i=0;i<10;i++){
  const row=rows[i+1]||[];
  const givenName=String(row[0]||'').trim();
  next[i].name=givenName||('Equipo '+(i+1));
@@ -79,6 +79,6 @@ async function refresh(manual=false){const btn=el("refresh-btn");if(btn){btn.dis
    else next[i].status='Tiempo agotado';
  }
 }
-resultData=next;render();el('live').textContent='● CONECTADO';el('status').textContent='Filas recibidas: '+(rows.length-1)+' · Tiempos válidos: '+next.filter(x=>Number.isFinite(x.time)).length+' · Última consulta: '+new Date().toLocaleTimeString('es-PE')+' · Se consulta Google Sheets cada 15 segundos. Los cambios publicados pueden tardar más en reflejarse.'}catch(err){el('live').textContent='SIN CONEXIÓN';el('status').textContent='ERROR DE CONEXIÓN: '+err.message+' · Para usar la conexión alternativa, verifica que Google Sheets esté compartido para lectura pública.'}finally{if(btn){btn.disabled=false;btn.textContent="↻ ACTUALIZAR RESULTADOS"}}}
+resultData=next;render();el('live').textContent='● CONECTADO';el('status').textContent='Filas recibidas: '+(rows.length-1)+' · Tiempos válidos: '+next.filter(x=>Number.isFinite(x.time)).length+' · Muestra recibida: '+sample.slice(0,350)+' · Última consulta: '+new Date().toLocaleTimeString('es-PE')+' · Se consulta Google Sheets cada 15 segundos. Los cambios publicados pueden tardar más en reflejarse.'}catch(err){el('live').textContent='SIN CONEXIÓN';el('status').textContent='ERROR DE CONEXIÓN: '+err.message+' · Para usar la conexión alternativa, verifica que Google Sheets esté compartido para lectura pública.'}finally{if(btn){btn.disabled=false;btn.textContent="↻ ACTUALIZAR RESULTADOS"}}}
 render();refresh();setInterval(refresh,15000);
 </script></body></html>
